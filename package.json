@@ -1,0 +1,16 @@
+{
+  "name": "claudecodeui",
+  "version": "1.0.0",
+  "description": "Claude Code Web UI",
+  "type": "module",
+  "scripts": {
+    "start": "npx @siteboon/claude-code-ui start",
+    "dev": "cloudcli start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@siteboon/claude-code-ui": "^1.27.1"
+  }
+}
