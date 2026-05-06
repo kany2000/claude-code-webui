@@ -1,4 +1,4 @@
-# Claude Code Web UI
+# ClaudeCLI2UI
 
 基于 [@cloudcli-ai/cloudcli](https://www.npmjs.com/package/@cloudcli-ai/cloudcli) 的 Claude Code 网页界面封装，提供浏览器端的 Claude Code 交互体验。
 
