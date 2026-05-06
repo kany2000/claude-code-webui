@@ -9,6 +9,7 @@ const lockFile = resolve(__dirname, 'package-lock.json');
 const serverPath = resolve(__dirname, 'node_modules/@cloudcli-ai/cloudcli/dist-server/server/index.js');
 
 let server = null;
+let currentServer = null;
 
 function startServer() {
   if (server) {
@@ -16,9 +17,15 @@ function startServer() {
     setTimeout(() => { if (server && !server.killed) server.kill('SIGKILL'); }, 5000);
   }
   console.log('[watch] Starting server...');
-  server = spawn('node', [serverPath], { stdio: 'inherit', cwd: __dirname });
-  server.on('exit', (code) => {
-    if (code !== 0) console.log('[watch] Server exited with code', code);
+  const child = spawn('node', [serverPath], { stdio: 'inherit', cwd: __dirname });
+  currentServer = child;
+  server = child;
+  child.on('exit', (code) => {
+    // Only auto-restart if this is still the current server (not a stale one from a previous restart)
+    if (code !== 0 && child === currentServer) {
+      console.log('[watch] Server exited unexpectedly (code', code, '), restarting...');
+      startServer();
+    }
   });
 }
 
