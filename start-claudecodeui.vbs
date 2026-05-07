@@ -1,2 +1,4 @@
-' Start Claude Code Web UI silently (no console window at all)
-CreateObject("Shell.Application").ShellExecute "C:\Program Files\nodejs\node.exe", "C:\Users\Administrator\claudecodeui\watch-restart.js", "C:\Users\Administrator\claudecodeui", "", 0
+' Start Claude Code Web UI silently (no console window)
+Set shell = CreateObject("WScript.Shell")
+shell.CurrentDirectory = "C:\Users\Administrator\claudecodeui"
+shell.Run """C:\Program Files\nodejs\node.exe"" watch-restart.js", 0, False
