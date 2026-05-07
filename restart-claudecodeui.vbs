@@ -1,12 +1,11 @@
-' Restart Claude Code UI silently
-Dim shell
+' Restart Claude Code UI silently (no console windows)
 Set shell = CreateObject("WScript.Shell")
 
-' Kill server on port 3001
-shell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -ano ^| findstr /C:""0.0.0.0:3001"" ^| findstr ""LISTENING""') do taskkill /f /pid %a >nul 2>&1", 0, True
+' Kill any existing process on port 3001
+shell.Run "pwsh -NoProfile -Command ""netstat -ano | Select-String '0.0.0.0:3001' | Select-String 'LISTENING' | ForEach-Object { Stop-Process -Id ([int]($_.split()[-1])) -Force -ErrorAction SilentlyContinue }""", 0, True
 
-' Wait for port to release
+' Wait a moment for port release
 WScript.Sleep 2000
 
-' Start fresh watchdog silently
-shell.Run "cmd /c cd /d C:\Users\Administrator\claudecodeui && ""C:\Program Files\nodejs\node.exe"" watch-restart.js", 0, False
+' Start fresh watchdog silently (no cmd window at all)
+CreateObject("Shell.Application").ShellExecute "C:\Program Files\nodejs\node.exe", "C:\Users\Administrator\claudecodeui\watch-restart.js", "C:\Users\Administrator\claudecodeui", "", 0

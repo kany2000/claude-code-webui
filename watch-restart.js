@@ -66,7 +66,8 @@ function startServer() {
   const child = spawn(NODE_EXE, [serverPath], {
     stdio: 'inherit',
     cwd: __dirname,
-    env: { ...process.env, VITE_IS_PLATFORM: 'true' }
+    env: { ...process.env, VITE_IS_PLATFORM: 'true' },
+    windowsHide: true
   });
   currentServer = child;
   server = child;
