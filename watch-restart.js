@@ -7,20 +7,14 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Self-relaunch with CREATE_NO_WINDOW to prevent any console window flash
-if (!process.env._CUI_RELAUNCHED) {
-  try {
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], {
-      windowsHide: true,
-      detached: true,
-      stdio: 'ignore',
-      env: { ...process.env, _CUI_RELAUNCHED: '1' },
-    });
-    child.unref();
-    process.exit(0);
-  } catch (e) {
-    // Self-relaunch failed — continue in current process (console mode)
-  }
+// No self-relaunch needed — launcher.exe creates the process with DETACHED_PROCESS
+// which completely prevents any console allocation.
+
+// Simple file logger (console.log won't work with DETACHED_PROCESS — no console)
+const logFile = resolve(__dirname, 'watch-restart.log');
+function log(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try { require('fs').appendFileSync(logFile, line); } catch {}
 }
 
 const lockFile = resolve(__dirname, 'package-lock.json');
@@ -74,54 +68,62 @@ const NODE_EXE = findNodeExecutable();
 let server = null;
 let currentServer = null;
 
+let serverLogStream = null;
+
 function startServer() {
   if (server) {
     server.kill('SIGTERM');
     setTimeout(() => { if (server && !server.killed) server.kill('SIGKILL'); }, 5000);
   }
-  console.log('[watch] Starting server...');
+  log('Starting server...');
+  // Pipe server stdout/stderr to a log file so we never need a console
+  if (serverLogStream) try { serverLogStream.end(); } catch {}
+  serverLogStream = require('fs').createWriteStream(resolve(__dirname, 'server.log'), { flags: 'a' });
   const child = spawn(NODE_EXE, [serverPath], {
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
     cwd: __dirname,
     env: { ...process.env, VITE_IS_PLATFORM: 'true' },
     windowsHide: true
   });
+  child.stdout.pipe(serverLogStream);
+  child.stderr.pipe(serverLogStream);
   currentServer = child;
   server = child;
   child.on('exit', (code) => {
     // Only auto-restart if this is still the current server (not a stale one from a previous restart)
     if (code !== 0 && child === currentServer) {
-      console.log('[watch] Server exited unexpectedly (code', code, '), restarting...');
+      log('Server exited unexpectedly (code ' + code + '), restarting...');
       startServer();
     }
   });
+  child.on('spawn', () => log('Server started (PID: ' + child.pid + ')'));
 }
 
 // Initial start
 startServer();
 
 // Watch package-lock.json for changes (npm install writes here)
-console.log('[watch] Watching for package changes...');
+log('Watching for package changes...');
 let debounce = null;
 try {
   watch(lockFile, (event) => {
     if (event === 'change') {
       clearTimeout(debounce);
       debounce = setTimeout(() => {
-        console.log('[watch] Package changed, restarting...');
+        log('Package changed, restarting...');
         startServer();
       }, 2000);
     }
   });
 } catch (e) {
-  console.log('[watch] Could not watch lock file, polling every 10s instead');
+  log('Could not watch lock file, polling every 10s instead');
   let lastMtime = null;
   setInterval(() => {
     try {
       const { statSync } = require('fs');
       const mtime = statSync(lockFile).mtimeMs;
       if (lastMtime && mtime !== lastMtime) {
-        console.log('[watch] Package changed, restarting...');
+        log('Package changed, restarting...');
         startServer();
       }
       lastMtime = mtime;
