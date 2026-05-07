@@ -9,4 +9,4 @@ shell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -ano ^| findstr /C:""0.0.0
 WScript.Sleep 2000
 
 ' Start fresh watchdog silently
-shell.Run "cmd /c cd /d C:\Users\Administrator\claudecodeui && node watch-restart.js", 0, False
+shell.Run "cmd /c cd /d C:\Users\Administrator\claudecodeui && ""C:\Program Files\nodejs\node.exe"" watch-restart.js", 0, False
