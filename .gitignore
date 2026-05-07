@@ -2,3 +2,5 @@ node_modules/
 .env
 *.db
 .claude/
+*.cmd
+*.ps1
